@@ -75,6 +75,22 @@
     <Compile Include="Migrations\201609121932588_AddNovelTypeRelate.Designer.cs">
       <DependentUpon>201609121932588_AddNovelTypeRelate.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201609130150294_ChangeChapter.cs" />
+    <Compile Include="Migrations\201609130150294_ChangeChapter.Designer.cs">
+      <DependentUpon>201609130150294_ChangeChapter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201609130438392_ChangeNovel.cs" />
+    <Compile Include="Migrations\201609130438392_ChangeNovel.Designer.cs">
+      <DependentUpon>201609130438392_ChangeNovel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201609131118550_ChangeChapter1.cs" />
+    <Compile Include="Migrations\201609131118550_ChangeChapter1.Designer.cs">
+      <DependentUpon>201609131118550_ChangeChapter1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201609131512090_ChangeChapter2.cs" />
+    <Compile Include="Migrations\201609131512090_ChangeChapter2.Designer.cs">
+      <DependentUpon>201609131512090_ChangeChapter2.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Models\Author.cs" />
     <Compile Include="Models\Chapter.cs" />
@@ -109,6 +125,18 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201609121932588_AddNovelTypeRelate.resx">
       <DependentUpon>201609121932588_AddNovelTypeRelate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201609130150294_ChangeChapter.resx">
+      <DependentUpon>201609130150294_ChangeChapter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201609130438392_ChangeNovel.resx">
+      <DependentUpon>201609130438392_ChangeNovel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201609131118550_ChangeChapter1.resx">
+      <DependentUpon>201609131118550_ChangeChapter1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201609131512090_ChangeChapter2.resx">
+      <DependentUpon>201609131512090_ChangeChapter2.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

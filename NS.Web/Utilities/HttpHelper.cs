@@ -22,9 +22,18 @@ namespace NS.Web.Utilities
         /// <returns>下载到的string类型的资源</returns>
         public static string DownloadSource(string url, Encoding encoding = null)
         {
-            var webClient = new WebClient { Encoding = encoding ?? Encoding.UTF8 };
+            try
+            {
+                var webClient = new WebClient { Encoding = encoding ?? Encoding.UTF8 };
 
-            return webClient.DownloadString(url);
+                return webClient.DownloadString(url);
+            }
+            catch (WebException exception)
+            {
+                Logger.Write($"资源未找到：{url}");
+
+                return string.Empty;
+            }
         }
 
         /// <summary>
@@ -73,6 +82,11 @@ namespace NS.Web.Utilities
                 throw new ArgumentException("目录仅支持以http或者https协议访问的远程主机地址");
             }
 
+            if (relateUrl.StartsWith("http://") || relateUrl.StartsWith("https://"))
+            {
+                return relateUrl;
+            }
+
             if (relateUrl.StartsWith("/"))
             {
                 var host = GetHost(currentUrl);
@@ -85,8 +99,18 @@ namespace NS.Web.Utilities
                 return $"{currentUrl}/{relateUrl}";
             }
 
-            var currentDir = currentUrl.Substring(0, lastIndex + 1);
-            return currentDir + relateUrl;
+            var lastPointIndex = currentUrl.LastIndexOf(".", StringComparison.Ordinal);
+            if (lastPointIndex > lastIndex)
+            {
+                var currentDir = currentUrl.Substring(0, lastIndex + 1);
+                return currentDir + relateUrl;
+            }
+
+            if (!currentUrl.EndsWith("/"))
+            {
+                currentUrl += "/";
+            }
+            return currentUrl + relateUrl;
         }
     }
 }

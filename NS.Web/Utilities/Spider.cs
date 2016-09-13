@@ -4,133 +4,153 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Web;
+using NS.Models;
+using NS.Web.Exceptions;
+using NS.Utilities.Extensions;
 
 namespace NS.Web.Utilities
 {
     /// <summary>
-    /// 爬虫类
+    /// 小说网站爬虫类
     /// </summary>
     public class Spider
     {
-        #region Properties
-        public string BaseUrl { get; set; }
+        public NovelAnalyzer Analyzer { get; set; }
 
+        private int _analysisTypePageTaskCount;
         /// <summary>
-        /// 小说分类字典，键为名称值为地址
+        /// 获取或设置在执行从小说列表页面提取小说名称及地址的过程时，允许同时开启的最大任务个数（不能超过20）
         /// </summary>
-        public Dictionary<string, string> NovelTypesDic { get; set; }
-
-        /// <summary>
-        /// 小说名称及地址队列（结构：键：分类名称 - 值：（键：小说名称 - 值：小说目录地址））
-        /// </summary>
-        public Dictionary<string, Dictionary<string, string>> NovelsDic { get; set; }
-
-        public string NovelTypePattern => "<a\\s+href=\"(/newclass/\\d+/\\d+\\.html)\">([\\s\\S]+?)</a>";
-        public string NovelNamePattern => "<a\\s+href=\"(/\\d+_\\d+/)\"[^>]*>([\\s\\S]+?)</a>";
-        public string NovelContentPattern => "(<h1>[\\s\\S]+?</h1>)[\\s\\S]+?(<div\\sid=\"content\">[\\s\\S]+?</div>)";
-        public string NovelAuthorPattern => "<h1>[\\s\\S]+?</h1>\\s*<p>\\s*作&nbsp;&nbsp;者：([^<]+)\\s*</p>";
-        public string NovelChapterPattern => "<a(\\s*\\w+=\"[^\"]*\"\\s*href=\"/\\d+_\\d+.html\")";
-
-        #endregion
-
-        #region Events
-        public event EventHandler<EventArgs> AfterGetNovelTypes;
-        public event EventHandler<EventArgs> AfterGetNovels;
-        #endregion
+        public int AnalysisTypePageTaskCount
+        {
+            get { return _analysisTypePageTaskCount; ; }
+            set
+            {
+                if (value <= 0)
+                {
+                    _analysisTypePageTaskCount = 5;
+                }
+                else if (value > 50)
+                {
+                    _analysisTypePageTaskCount = 20;
+                }
+                else
+                {
+                    _analysisTypePageTaskCount = value;
+                }
+            }
+        }
 
         #region Methods
-        public Spider(string baseUrl)
+        public Spider(NovelAnalyzer analyzer)
         {
-            if (string.IsNullOrEmpty(baseUrl))
+            if (analyzer == null)
             {
-                throw new ArgumentNullException(nameof(baseUrl));
+                throw new ArgumentNullException(nameof(analyzer), "请提供小说网页分析器");
             }
 
-            BaseUrl = baseUrl;
-            NovelTypesDic = new Dictionary<string, string>();
-            NovelsDic = new Dictionary<string, Dictionary<string, string>>();
+            Analyzer = analyzer;
+
+            DefaultSettings();
         }
 
-        public void Start()
+        private void DefaultSettings()
         {
-            GetNovelTypes();
+            _analysisTypePageTaskCount = 20;
         }
 
-        public void GetNovelTypes()
+        /// <summary>
+        /// 使用分析器，执行对首页小说分类列表的提取过程，并返回分类名称及地址的字典集
+        /// </summary>
+        public Dictionary<string, string> GetNovelTypes()
         {
-            var indexHtml = HttpHelper.DownloadSource(BaseUrl);
-            var regex = new Regex(NovelTypePattern);
-            var matches = regex.Matches(indexHtml);
-
-            if (matches.Count > 0)
+            if (string.IsNullOrEmpty(Analyzer.NovelSiteIndexUrl))
             {
-                foreach (Match match in matches)
-                {
-                    var name = match.Groups[2].Value;
-                    var relateUrl = match.Groups[1].Value;
-                    var abosoluteUrl = HttpHelper.RelateToAbsolute(BaseUrl, relateUrl);
+                throw new NullIndexUrlException();
+            }
+            if (string.IsNullOrEmpty(Analyzer.NovelTypePattern))
+            {
+                throw new NullPatternException();
+            }
 
-                    NovelTypesDic.Add(name, abosoluteUrl);
-                    NovelsDic.Add(name, new Dictionary<string, string>());
+            var indexHtml = HttpHelper.DownloadSource(Analyzer.NovelSiteIndexUrl, Analyzer.Encode);
+
+            return Analyzer.GetNovelTypesDic(indexHtml);
+        }
+
+        /// <summary>
+        /// 使用分析器，执行对指定小说分类页面的小说信息的提取过程，并返回小说名称及其地址的字典集
+        /// </summary>
+        /// <param name="typeUrl"></param>
+        /// <param name="pageIndex">页码</param>
+        public Dictionary<string, string> GetNovelUrls(string typeUrl, int pageIndex)
+        {
+            if (string.IsNullOrEmpty(typeUrl))
+            {
+                throw new ArgumentNullException(nameof(typeUrl));
+            }
+            if (string.IsNullOrEmpty(Analyzer.NovelNamePattern))
+            {
+                throw new NullPatternException();
+            }
+
+            typeUrl = HttpHelper.RelateToAbsolute(Analyzer.NovelSiteIndexUrl, typeUrl);
+            
+            var url = Analyzer.BuildNovelTypePageUrl(typeUrl, pageIndex);
+            var pageHtml = HttpHelper.DownloadSource(url, Analyzer.Encode);
+
+            return Analyzer.GetNovelInfosDic(pageHtml);
+        }
+
+        public int GetTotalPageCount(string referenceUrl)
+        {
+            referenceUrl = HttpHelper.RelateToAbsolute(Analyzer.NovelSiteIndexUrl, referenceUrl);
+            var html = HttpHelper.DownloadSource(referenceUrl, Analyzer.Encode);
+
+            // 获取最大页码
+            var pageTotalCount = 1;
+            if (!string.IsNullOrEmpty(Analyzer.TotalPagePattern))
+            {
+                pageTotalCount = Analyzer.GetTotalPage(html);
+                if (pageTotalCount <= 0)
+                {
+                    pageTotalCount = 1;
                 }
             }
 
-            AfterGetNovelTypes?.Invoke(this, EventArgs.Empty);
+            return pageTotalCount;
         }
 
-        public void GetNovels()
+        public Novel GetNovelInfo(string referenceUrl)
         {
-            var tasks = new Task[NovelTypesDic.Count];
+            var html = HttpHelper.DownloadSource(referenceUrl, Analyzer.Encode);
+            var author = Analyzer.GetAuthor(html);
+            var desc = Analyzer.GetDescription(html);
+            var cover = Analyzer.GetNovelCoverPath(html);
 
-            var count = 0;
-            foreach (var typeName in NovelTypesDic.Keys)
+            var chaptersUrl = Analyzer.GetChaptersUrl(html);
+            chaptersUrl = HttpHelper.RelateToAbsolute(referenceUrl, chaptersUrl);
+
+            return new Novel
             {
-                var url = NovelTypesDic[typeName];
-                var novelContainer = NovelsDic[typeName];
-
-                tasks[count] = Task.Factory.StartNew(() =>
-                {
-                    var html = HttpHelper.DownloadSource(url);
-
-                    var regex = new Regex(NovelNamePattern);
-                    var matches = regex.Matches(html);
-                    if (matches.Count > 0)
-                    {
-                        foreach (Match match in matches)
-                        {
-                            var name = match.Groups[2].Value;
-                            var relateUrl = match.Groups[1].Value;
-                            var abosoluteUrl = HttpHelper.RelateToAbsolute(url, relateUrl);
-
-                            if (!novelContainer.ContainsKey(name))
-                            {
-                                novelContainer.Add(name, abosoluteUrl);
-                            }
-                        }
-                    }
-                });
-                count++;
-            }
-
-            Task.WaitAll(tasks);
-
-            AfterGetNovels?.Invoke(this, EventArgs.Empty);
+                Author = new Author { Name = author },
+                Description = desc,
+                CoverUrl = cover,
+                ChapterListUrl = chaptersUrl
+            };
         }
 
-        public void GetChapters(string url)
+        public Dictionary<string, string> GetChapterUrls(string chapterListUrl)
         {
-            var html = HttpHelper.DownloadSource(url);
+            var html = HttpHelper.DownloadSource(chapterListUrl, Analyzer.Encode);
+            return Analyzer.GetChaptersDic(html);
         }
 
+        public string GetChapterContent(string chapterUrl)
+        {
+            var html = HttpHelper.DownloadSource(chapterUrl, Analyzer.Encode);
+            return Analyzer.GetChapterContent(html);
+        }
         #endregion
-    }
-
-    /// <summary>
-    /// 获取章节成功后调用事件所传递的参数
-    /// </summary>
-    public class ChapterEventArgs : EventArgs
-    {
-        public string Author { get; set; }
-        public Dictionary<string, string> ChapterLinksDic { get; set; }
     }
 }

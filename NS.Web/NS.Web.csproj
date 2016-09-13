@@ -168,15 +168,20 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\Startup.Auth.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Exceptions\NovelSpiderExceptions.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\AccountViewModels.cs" />
     <Compile Include="Models\IdentityModels.cs" />
     <Compile Include="Models\ManageViewModels.cs" />
+    <Compile Include="Utilities\Logger.cs" />
+    <Compile Include="Utilities\NovelAnalyzer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="Utilities\HttpHelper.cs" />
+    <Compile Include="Utilities\NovelManager.cs" />
+    <Compile Include="Utilities\QuanshuAnalyzer.cs" />
     <Compile Include="Utilities\Spider.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -214,6 +219,10 @@
     <ProjectReference Include="..\NS.Models\NS.Models.csproj">
       <Project>{dae51f49-e704-4592-a7b5-0e97343b2db8}</Project>
       <Name>NS.Models</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\NS.Utilities\NS.Utilities.csproj">
+      <Project>{cb6199e5-e08a-48d2-9af0-f92c28fcbbf9}</Project>
+      <Name>NS.Utilities</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

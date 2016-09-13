@@ -14,8 +14,10 @@ namespace NS.Models
     {
         public int Id { get; set; }
         public string Description { get; set; }
+        public string CoverUrl { get; set; }
         public DateTime UpdateTime { get; set; }
         public bool Isdelete { get; set; }
+        public string ChapterListUrl { get; set; }
 
         [Required]
         [MaxLength(50)]
@@ -23,8 +25,7 @@ namespace NS.Models
 
         public int AuthorId { get; set; }
         public virtual Author Author { get; set; }
-
-        public int NovelTypeId { get; set; }
+        
         public virtual List<NovelTypeRelate> NovelTypeRelates { get; set; }
         public virtual List<Chapter> Chapters { get; set; }
     }
