@@ -222,8 +222,9 @@ namespace NS.Web.Utilities
                     var author = _db.Authors.SingleOrDefault(a => a.Name.Equals(authorName));
                     if (author == null)
                     {
+
                         novel.Author = _db.Authors.Add(novel.Author);
-                        _db.SaveChanges();
+                        _db.SaveChanges(); 
                     }
                     else
                     {
